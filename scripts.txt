@@ -1,0 +1,6 @@
+python -m venv env
+call env/scripts/activate
+pip install -r requirements.txt
+pip install aiohttp PyQt6 pyinstaller auto-py-to-exe
+pip freeze > requirements.txt
+auto-py-to-exe
