@@ -1,17 +1,36 @@
-import asyncio
 import datetime
-import json
-import os
-import shutil
 import sys
 import threading
-import aiohttp
+import time
+
 from PyQt6 import QtWidgets
+from image_or_json_downloader import image_downloader, json_downloader
+from weather_or_currency_monitoring import weather_monitoring, currency_monitoring
+from image_or_video_scanner import image_scanner, video_scanner
+from data_analyse import data_analyse
+
+"""
+* Загрузчик картинок или json-файлов - вы указываете ссылку, он скачивает файл и записывает его в папку.
+
+* Мониторинг погоды и курса валют - настольное приложение для вывода в реальном времени выбранных данных.
+
+* Парсер цен в электронном магазине: вы указываете категорию и алгоритм сканирует все товары в этой категории и 
+записывает в текстовый файл в формате "товар-цена".
+
+* Сканер папок с изображениями: есть одна папка, в ней надо найти только людей и вырезать эти файлы в другую папку.
+
+* Анализатор видеофайлов или видео с веб-камеры и поиск жестов, вывод их на экран.
+
+* Выведение суммы, среднего, моды..., а также их отображение pyplot, значений из файла, используя numpy
+"""
 
 
 class PyQtWindow(QtWidgets.QWidget):
     def __init__(self, window_title: str):
         super().__init__()
+
+        global headers
+        self.headers = headers
 
         self.layout = QtWidgets.QGridLayout(self)
 
@@ -34,48 +53,75 @@ class PyQtWindow(QtWidgets.QWidget):
 
     def start(self):
         self.label_status.setText("идёт загрузка")
-        new_thread = threading.Thread(target=self.start_download)
+        new_thread = threading.Thread(target=self.start_data_analyse)
         new_thread.start()
 
     def finish(self, message="загрузка завершена"):
         self.label_status.setText(f"{message} [{datetime.datetime.now().strftime('%H:%M:%S')}]")
 
-    def start_download(self):
+    def start_json_download(self):
         try:
-            try:
-                shutil.rmtree("data")
-            except Exception as error:
-                pass
-            os.mkdir("data")
-
             url = str(self.line_edit_url.text())
-            headers = {
-                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) '
-                              'Chrome/102.0.0.0 Safari/537.36'
-            }
+            json_downloader.start(url=url, headers=self.headers)
+            self.finish()
+        except Exception as error:
+            self.finish(f"ошибка: {error}")
 
-            async def download():
-                async with aiohttp.ClientSession() as session:
-                    async with session.get(url=url, headers=headers) as resp_object:
-                        response = await resp_object.json()
+    def start_image_download(self):
+        try:
+            image_downloader.start(url="https://picsum.photos/370/250", headers=self.headers)
+            self.finish()
+        except Exception as error:
+            self.finish(f"ошибка: {error}")
 
-                        if not isinstance(response, list):
-                            response = [response]
+    def start_weather_monitoring(self):
+        try:
+            while True:
+                time.sleep(2.0)
+                weather_monitoring.start(url="https://www.gismeteo.kz/weather-astana-5164/", headers=self.headers)
+                self.finish()
+        except Exception as error:
+            self.finish(f"ошибка: {error}")
 
-                        for index, json_obj in enumerate(response, 1):
-                            with open(f'data/data{json_obj["id"]}_{datetime.datetime.now().strftime("%H_%M")}.json',
-                                      'w') as file:
-                                json.dump(json_obj, file)
+    def start_currency_monitoring(self):
+        try:
+            while True:
+                time.sleep(2.0)
+                currency_monitoring.start(url="https://api.coincap.io/v2/assets/", headers=self.headers)
+                self.finish()
+        except Exception as error:
+            self.finish(f"ошибка: {error}")
 
-                        self.finish()
+    def start_image_scanner(self):
+        try:
+            image_scanner.start()
+            self.finish()
+        except Exception as error:
+            self.finish(f"ошибка: {error}")
 
-            asyncio.run(download())
+    def start_video_scanner(self):
+        try:
+            video_scanner.start()
+            self.finish()
+        except Exception as error:
+            self.finish(f"ошибка: {error}")
+
+    def start_data_analyse(self):
+        try:
+            data_analyse.start()
+            self.finish()
         except Exception as error:
             self.finish(f"ошибка: {error}")
 
 
-if __name__ == '__main__':
-    pyqt_app = QtWidgets.QApplication([])
-    pyqt_ui = PyQtWindow("загрузчик json")
 
+
+if __name__ == '__main__':
+    headers = {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) '
+                      'Chrome/102.0.0.0 Safari/537.36'
+    }
+
+    pyqt_app = QtWidgets.QApplication([])
+    pyqt_ui = PyQtWindow("пример приложений python")
     sys.exit(pyqt_app.exec())
