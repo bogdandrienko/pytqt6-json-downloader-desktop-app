@@ -5,6 +5,11 @@ import requests
 def start(url: str, headers: dict):
     response = requests.get(url=url, headers=headers).json()
 
+    # data1 = []
+    # for i in response["data"]:
+    #     if float(i['priceUsd']) > 10:
+    #         data1.append(i)
+
     data = filter(lambda x: float(x['priceUsd']) > 10, response["data"])
     data = sorted(data, key=lambda x: float(x['priceUsd']), reverse=True)
     print(f"\n\n\n*********************** {datetime.datetime.now().strftime('%H:%M:%S')} "

@@ -3,9 +3,8 @@ import cv2
 import os
 
 
-def start(name="image", quality=90):
+def start(name="image", quality=5):
     filepath = "image_or_video_scanner/data"
-
     try:
         shutil.rmtree(filepath)
     except Exception as error:
